@@ -5,8 +5,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class DiceRollController {
-    @GetMapping("/roll-dice")
+    @GetMapping("/dice-roll")
     public String RollDice(){
-        return "/roll-dece";
+        return "/dice-roll";
     }
 }
