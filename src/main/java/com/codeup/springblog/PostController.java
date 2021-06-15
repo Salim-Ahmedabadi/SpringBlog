@@ -1,35 +1,118 @@
-package com.codeup.springblog;
+package com.codeup.springblog.controllers;
 
+import com.codeup.springblog.models.Post;
+import com.codeup.springblog.daos.PostRepository;
+import com.codeup.springblog.models.User;
+import com.codeup.springblog.daos.UserRepository;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class PostController {
-    @GetMapping("/posts")
-    @ResponseBody
-    public String posts(){
-        return "This is the post index page!";
+    private final PostRepository postsDao;
+    private final UserRepository usersDao;
+
+    public PostController(PostRepository postsDao, UserRepository usersDao) {
+        this.postsDao = postsDao;
+        this.usersDao = usersDao;
     }
 
-    @GetMapping("/posts/{id}")
-    @ResponseBody
-    public String id(@PathVariable String id){
-        return "This is where you would view an individual page!";
+    @GetMapping(path = "/users")
+    public String usersPage(Model model) {
+        model.addAttribute("users", usersDao.findAll());
+        return "users";
     }
 
-    @GetMapping("/posts/create")
-    @ResponseBody
-    public String create(){
-        return "This is where you would view the form for creating a page!";
+    @GetMapping(path = "/register")
+    public String getRegisterForm(Model model) {
+        model.addAttribute("user", new User());
+        return "register";
     }
 
-    @PostMapping ("/posts/create")
-    @ResponseBody
-    public String newPost(){
-        return "This is where you would create a new page!";
+    @PostMapping(path = "/register")
+    public String register(@ModelAttribute User user, Model model) {
+        model.addAttribute("user", usersDao.save(user));
+        return "profile";
     }
 
+    @GetMapping(path = "/posts")
+    public String indexPage(Model model) {
+        model.addAttribute("posts", postsDao.findAll());
+        return "posts/index";
+    }
+
+    @RequestMapping(path = "/posts/{id}", method = RequestMethod.GET)
+    public String viewPost(@PathVariable long id, Model model) {
+        model.addAttribute("post", postsDao.findPostById(id));
+        return "posts/show";
+    }
+
+    @RequestMapping(path = "/posts/create", method = RequestMethod.GET)
+    public String getPostForm(Model model) {
+        model.addAttribute("post", new Post());
+        return "posts/create";
+    }
+
+    @RequestMapping(path = "/posts/create", method = RequestMethod.POST)
+    public String create(@ModelAttribute Post post) {
+        User user = usersDao.getById(1L);
+        post.setUser(user);
+        post.setImages(null);
+        postsDao.save(post);
+        return "redirect:/posts/" + post.getId();
+    }
+
+    @GetMapping(path = "/posts/{id}/edit")
+    public String showEditForm(@PathVariable long id, Model model) {
+        model.addAttribute("post", postsDao.getById(id));
+        return "posts/edit";
+    }
+
+    @PostMapping(path = "/posts/{id}/edit")
+    public String edit(@PathVariable long id,
+                       @RequestParam(name = "title") String title,
+                       @RequestParam(name = "body") String body,
+                       Model model) {
+        User user = usersDao.getById(1L);
+        Post post = postsDao.getById(id);
+        post.setUser(user);
+        post.setTitle(title);
+        post.setBody(body);
+        model.addAttribute("post", postsDao.saveAndFlush(post));
+        return "redirect:/posts/" + id;
+    }
+
+    @PostMapping(path = "/posts/{id}/delete")
+    public String delete(@PathVariable long id) {
+        postsDao.deleteById(id);
+        return "redirect:/posts";
+    }
+
+
+    @Controller
+    public static class UserController {
+
+        @GetMapping("/users/all")
+        public String getAllUsers(Model model) {
+            List<User> users = new ArrayList<>();
+
+    //        users.add(new User("Samuel", "Moore", "samm", "samm@codeup.com"));
+    //        users.add(new User("Andrew", "Walsh"));
+
+
+            model.addAttribute("users", users);
+            return "users";
+        }
+
+        @GetMapping("/user")
+        public String getUserString(Model model) {
+    //        model.addAttribute("user", new User("Douglas", "Hirsh"));
+            return "users";
+        }
+
+    }
 }
